@@ -40,6 +40,7 @@ Resources:
               }
       Handler: index.handler
       Runtime: python3.7
+      Role: !GetAtt 'ApiFunctionRole.Arn'
       Events:
         Api:
           Type: Api
@@ -47,6 +48,43 @@ Resources:
             RestApiId: !Ref 'Api'
             Method: GET
             Path: /example
+  ApiFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2008-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Ref 'ApiFunctionPolicy'
+  ApiFunctionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Path: /
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 0
+            Effect: Allow
+            Action:
+              - logs:GetLogEvents
+              - logs:PutLogEvents
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:DescribeLogStreams
+            Resource:
+              - !GetAtt 'ApiFunctionLogGroup.Arn'
+              - !Sub '${ApiFunctionLogGroup.Arn}:log-stream:*'
+  ApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
 Outputs:
   ApiId:
     Description: API ID
